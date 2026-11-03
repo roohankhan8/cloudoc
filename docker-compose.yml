@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${DB_NAME:-clouddoc}
+      POSTGRES_USER: ${DB_USER:-clouddoc}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-clouddoc}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-clouddoc} -d ${DB_NAME:-clouddoc}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
