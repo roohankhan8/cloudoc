@@ -1,17 +1,10 @@
-import boto3
-from botocore.config import Config
 from django.conf import settings
+
+from .aws import aws_client
 
 
 def s3_client():
-    return boto3.client(
-        "s3",
-        endpoint_url=settings.AWS_S3_ENDPOINT_URL,
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-        region_name=settings.AWS_REGION,
-        config=Config(s3={"addressing_style": "path"}),
-    )
+    return aws_client("s3")
 
 
 def upload_document(file_obj, object_key):
@@ -25,6 +18,10 @@ def upload_document(file_obj, object_key):
 
 def delete_document(object_key):
     s3_client().delete_object(Bucket=settings.AWS_S3_BUCKET_NAME, Key=object_key)
+
+
+def verify_document_exists(object_key):
+    s3_client().head_object(Bucket=settings.AWS_S3_BUCKET_NAME, Key=object_key)
 
 
 def create_download_url(object_key):

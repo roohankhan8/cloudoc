@@ -5,6 +5,7 @@ from django.conf import settings
 from rest_framework import serializers
 
 from .models import Document
+from .queue import enqueue_document
 from .storage import create_download_url, delete_document, upload_document
 
 
@@ -14,8 +15,8 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Document
-        fields = ["id", "original_filename", "content_type", "size", "created_at", "download_url", "file"]
-        read_only_fields = ["id", "original_filename", "content_type", "size", "created_at", "download_url"]
+        fields = ["id", "original_filename", "content_type", "size", "status", "processing_attempts", "last_error", "created_at", "updated_at", "download_url", "file"]
+        read_only_fields = ["id", "original_filename", "content_type", "size", "status", "processing_attempts", "last_error", "created_at", "updated_at", "download_url"]
 
     def validate_file(self, value):
         allowed_extensions = {".pdf", ".csv", ".xlsx"}
@@ -29,15 +30,20 @@ class DocumentSerializer(serializers.ModelSerializer):
         file_obj = validated_data.pop("file")
         original_filename = Path(file_obj.name).name[:255]
         object_key = f"documents/{uuid.uuid4()}{Path(original_filename).suffix.lower()}"
+        document = None
         upload_document(file_obj, object_key)
         try:
-            return Document.objects.create(
+            document = Document.objects.create(
                 original_filename=original_filename,
                 object_key=object_key,
                 content_type=file_obj.content_type or "application/octet-stream",
                 size=file_obj.size,
             )
+            enqueue_document(document.id)
+            return document
         except Exception:
+            if document is not None:
+                document.delete()
             delete_document(object_key)
             raise
 
