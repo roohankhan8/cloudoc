@@ -66,7 +66,7 @@ Start the worker in a second window with the virtual environment activated:
 python manage.py process_documents
 ```
 
-The API is available at `http://127.0.0.1:8000/api/documents/`.
+The frontend is available at `http://127.0.0.1:8000/`; the API remains available at `http://127.0.0.1:8000/api/documents/`.
 
 ## Try the document API
 

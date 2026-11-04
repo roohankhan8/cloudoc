@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CloudDoc</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+        color: #17221e;
+        background: #f3f6f4;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      main {
+        width: min(1040px, calc(100% - 32px));
+        margin: 48px auto;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 28px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 28px;
+        letter-spacing: -0.04em;
+      }
+      h2 {
+        margin: 0 0 16px;
+        font-size: 17px;
+      }
+      p {
+        color: #68756f;
+      }
+      .eyebrow {
+        margin: 0 0 6px;
+        color: #267657;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      .local {
+        border: 1px solid #c9ded3;
+        border-radius: 999px;
+        padding: 7px 11px;
+        color: #267657;
+        background: #e8f3ed;
+        font-size: 12px;
+        font-weight: 650;
+        white-space: nowrap;
+      }
+      .panel {
+        margin-bottom: 20px;
+        border: 1px solid #e0e7e2;
+        border-radius: 14px;
+        padding: 22px;
+        background: #fff;
+        box-shadow: 0 8px 24px #183b2610;
+      }
+      .upload-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      input[type="file"] {
+        min-width: 240px;
+        flex: 1;
+        border: 1px solid #dce4df;
+        border-radius: 8px;
+        padding: 10px;
+        background: #fbfcfb;
+      }
+      button,
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        border-radius: 8px;
+        padding: 10px 14px;
+        color: #fff;
+        background: #267657;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 650;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      button:hover,
+      .button:hover {
+        background: #1c6045;
+      }
+      .hint {
+        margin: 10px 0 0;
+        font-size: 13px;
+      }
+      .messages {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 18px;
+      }
+      .message {
+        border-radius: 8px;
+        padding: 11px 14px;
+        background: #e8f3ed;
+        color: #20583f;
+        font-size: 14px;
+      }
+      .message.error {
+        background: #fff0ed;
+        color: #9b382a;
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+      }
+      th {
+        padding: 10px 12px;
+        color: #718078;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      td {
+        border-top: 1px solid #edf0ee;
+        padding: 14px 12px;
+        font-size: 14px;
+        vertical-align: middle;
+      }
+      .filename {
+        max-width: 260px;
+        overflow-wrap: anywhere;
+        font-weight: 650;
+      }
+      .muted {
+        margin-top: 4px;
+        color: #7b8781;
+        font-size: 12px;
+      }
+      .status {
+        display: inline-flex;
+        border-radius: 999px;
+        padding: 5px 9px;
+        background: #f0f2f1;
+        color: #5f6b65;
+        font-size: 12px;
+        font-weight: 650;
+        text-transform: capitalize;
+      }
+      .status.pending {
+        background: #fff3d9;
+        color: #885c00;
+      }
+      .status.processing {
+        background: #e6f1ff;
+        color: #285c98;
+      }
+      .status.processed {
+        background: #e6f4eb;
+        color: #267044;
+      }
+      .status.failed {
+        background: #fff0ed;
+        color: #9b382a;
+      }
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .actions .button {
+        padding: 7px 10px;
+        font-size: 12px;
+      }
+      .delete {
+        border: 1px solid #e8d8d5;
+        padding: 7px 10px;
+        color: #9b382a;
+        background: #fff;
+        font-size: 12px;
+      }
+      .delete:hover {
+        background: #fff0ed;
+      }
+      .empty {
+        padding: 32px 12px;
+        color: #718078;
+        text-align: center;
+      }
+      .error-detail {
+        max-width: 260px;
+        color: #9b382a;
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
+      @media (max-width: 680px) {
+        main {
+          margin: 24px auto;
+        }
+        header {
+          align-items: flex-start;
+        }
+        .panel {
+          padding: 16px;
+        }
+        th:nth-child(2),
+        td:nth-child(2),
+        th:nth-child(4),
+        td:nth-child(4) {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <p class="eyebrow">Document workspace</p>
+          <h1>CloudDoc</h1>
+        </div>
+        <span class="local">Local development</span>
+      </header>
+
+      {% if messages %}
+      <div class="messages" role="status" aria-live="polite">
+        {% for message in messages %}
+        <div class="message{% if message.tags == 'error' %} error{% endif %}">
+          {{ message }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <section class="panel" aria-labelledby="upload-heading">
+        <h2 id="upload-heading">Upload a document</h2>
+        <form
+          action="{% url 'document-upload' %}"
+          method="post"
+          enctype="multipart/form-data"
+        >
+          {% csrf_token %}
+          <div class="upload-row">
+            <input
+              type="file"
+              name="file"
+              accept=".pdf,.csv,.xlsx"
+              required
+              aria-label="Choose a PDF, CSV, or XLSX document"
+            />
+            <button type="submit">Upload document</button>
+          </div>
+          <p class="hint">
+            PDF, CSV, or XLSX · maximum 10 MiB. Processing runs in the
+            background.
+          </p>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="documents-heading">
+        <h2 id="documents-heading">
+          Documents <span class="muted">({{ documents|length }})</span>
+        </h2>
+        {% if documents %}
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Document</th>
+                <th>Size</th>
+                <th>Status</th>
+                <th>Updated</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for document in documents %}
+              <tr>
+                <td>
+                  <div class="filename">{{ document.original_filename }}</div>
+                  {% if document.last_error %}
+                  <div class="error-detail">{{ document.last_error }}</div>
+                  {% endif %} {% if document.processing_attempts %}
+                  <div class="muted">
+                    Attempt {{ document.processing_attempts }}
+                  </div>
+                  {% endif %}
+                </td>
+                <td>{{ document.size|filesizeformat }}</td>
+                <td>
+                  <span class="status {{ document.status }}"
+                    >{{ document.get_status_display }}</span
+                  >
+                </td>
+                <td>{{ document.updated_at|date:"M j, Y H:i" }}</td>
+                <td>
+                  <div class="actions">
+                    <a
+                      class="button"
+                      href="{% url 'document-download' document.id %}"
+                      >Download</a
+                    >
+                    <form
+                      action="{% url 'document-delete' document.id %}"
+                      method="post"
+                    >
+                      {% csrf_token %}
+                      <button class="delete" type="submit">Delete</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="empty">
+          No documents yet. Upload one above to get started.
+        </div>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>
