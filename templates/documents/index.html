@@ -213,6 +213,12 @@
         font-size: 12px;
         overflow-wrap: anywhere;
       }
+      .extracted {
+        margin-top: 6px;
+        color: #52625a;
+        font-size: 12px;
+        line-height: 1.6;
+      }
       @media (max-width: 680px) {
         main {
           margin: 24px auto;
@@ -271,8 +277,8 @@
             <button type="submit">Upload document</button>
           </div>
           <p class="hint">
-            PDF, CSV, or XLSX · maximum 10 MiB. Processing runs in the
-            background.
+            PDF, CSV, or XLSX · maximum 10 MiB. Invoice extraction currently
+            supports text-based PDFs; processing runs in the background.
           </p>
         </form>
       </section>
@@ -300,6 +306,10 @@
                   <div class="filename">{{ document.original_filename }}</div>
                   {% if document.last_error %}
                   <div class="error-detail">{{ document.last_error }}</div>
+                  {% endif %} {% if document.extracted_data %}
+                  <div class="extracted">
+                    Invoice {{ document.extracted_data.invoice_number|default:"not found" }} · {{ document.extracted_data.invoice_date|default:"date not found" }} · {{ document.extracted_data.total_amount|default:"total not found" }}
+                  </div>
                   {% endif %} {% if document.processing_attempts %}
                   <div class="muted">
                     Attempt {{ document.processing_attempts }}

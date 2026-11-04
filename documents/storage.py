@@ -20,8 +20,8 @@ def delete_document(object_key):
     s3_client().delete_object(Bucket=settings.AWS_S3_BUCKET_NAME, Key=object_key)
 
 
-def verify_document_exists(object_key):
-    s3_client().head_object(Bucket=settings.AWS_S3_BUCKET_NAME, Key=object_key)
+def read_document(object_key):
+    return s3_client().get_object(Bucket=settings.AWS_S3_BUCKET_NAME, Key=object_key)["Body"].read()
 
 
 def create_download_url(object_key):

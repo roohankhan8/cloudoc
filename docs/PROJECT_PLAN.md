@@ -13,7 +13,7 @@ Build a Django REST API that accepts PDF, CSV, and Excel documents, stores them 
 
 ## Milestones
 
-**Progress:** Milestones 1 and 2 completed. Milestone 3 code is implemented; local run-through is pending.
+**Progress:** Milestones 1 and 2 completed. Milestones 3 and 4 are implemented; local run-through is pending.
 
 ### 1. Local cloud foundation
 

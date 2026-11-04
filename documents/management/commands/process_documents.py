@@ -4,12 +4,10 @@ import uuid
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 
 from documents.aws import aws_client
-from documents.models import Document
+from documents.processing import process_document
 from documents.queue import queue_url
-from documents.storage import verify_document_exists
 
 logger = logging.getLogger(__name__)
 
@@ -44,39 +42,9 @@ class Command(BaseCommand):
             logger.exception("Invalid document message; leaving it for SQS redrive.")
             return False
 
-        try:
-            document = Document.objects.get(pk=document_id)
-        except Document.DoesNotExist:
-            logger.warning("Document %s no longer exists; acknowledging message.", document_id)
-            return True
-
-        if document.status in (Document.Status.PROCESSED, Document.Status.FAILED):
-            return True
-
         attempts = int(message.get("Attributes", {}).get("ApproximateReceiveCount", "1"))
-        Document.objects.filter(pk=document.pk).update(
-            status=Document.Status.PROCESSING,
-            processing_attempts=attempts,
-            updated_at=timezone.now(),
-        )
         try:
-            verify_document_exists(document.object_key)
-        except Exception as exc:
-            is_final_attempt = attempts >= settings.SQS_MAX_RECEIVE_COUNT
-            Document.objects.filter(pk=document.pk).update(
-                status=Document.Status.FAILED if is_final_attempt else Document.Status.PENDING,
-                processing_attempts=attempts,
-                last_error=str(exc)[:4000],
-                updated_at=timezone.now(),
-            )
-            logger.exception("Document %s processing attempt %s failed.", document_id, attempts)
+            return process_document(document_id, attempts)
+        except Exception:
+            logger.exception("Document %s processing failed before it could be recorded.", document_id)
             return False
-
-        Document.objects.filter(pk=document.pk).update(
-            status=Document.Status.PROCESSED,
-            processing_attempts=attempts,
-            last_error="",
-            updated_at=timezone.now(),
-        )
-        self.stdout.write(f"Processed document {document_id}")
-        return True

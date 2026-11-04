@@ -18,6 +18,7 @@ class Document(models.Model):
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
     processing_attempts = models.PositiveSmallIntegerField(default=0)
     last_error = models.TextField(blank=True)
+    extracted_data = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

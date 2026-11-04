@@ -1,0 +1,73 @@
+%PDF-1.4
+%CloudDoc samples
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+6 0 obj
+<< /Length 1425 >>
+stream
+0.140 0.420 0.330 rg 0 810 595 32 re f
+0.12 0.17 0.15 rg
+BT /F2 26 Tf 58 760 Td (INVOICE) Tj ET
+0.40 0.45 0.42 rg
+BT /F1 9 Tf 58 744 Td (DOCUMENT PROCESSING SAMPLE) Tj ET
+0.140 0.420 0.330 rg
+BT /F2 13 Tf 330 765 Td (Northstar Office Supplies) Tj ET
+0.40 0.45 0.42 rg
+BT /F1 9 Tf 330 749 Td (100 Market Street, Suite 4) Tj ET
+BT /F1 9 Tf 330 735 Td (Karachi, Pakistan) Tj ET
+0.94 0.96 0.94 rg 58 660 479 52 re f
+0.12 0.17 0.15 rg
+BT /F2 10 Tf 72 688 Td (Invoice Number: INV-2026-001) Tj ET
+BT /F2 10 Tf 72 670 Td (Invoice Date: 2026-11-04) Tj ET
+0.40 0.45 0.42 rg
+BT /F2 8 Tf 58 632 Td (DESCRIPTION) Tj ET
+BT /F2 8 Tf 446 632 Td (AMOUNT) Tj ET
+0.84 0.88 0.85 RG 58 624 m 537 624 l S
+0.12 0.17 0.15 rg
+BT /F1 10 Tf 58 601 Td (A4 paper, 5 boxes) Tj ET
+BT /F1 10 Tf 446 601 Td (USD 425.00) Tj ET
+0.92 0.94 0.92 RG 58 593 m 537 593 l S
+0.12 0.17 0.15 rg
+BT /F1 10 Tf 58 567 Td (Laser toner, black) Tj ET
+BT /F1 10 Tf 446 567 Td (USD 510.00) Tj ET
+0.92 0.94 0.92 RG 58 559 m 537 559 l S
+0.12 0.17 0.15 rg
+BT /F1 10 Tf 58 533 Td (Desk organizers, 3) Tj ET
+BT /F1 10 Tf 446 533 Td (USD 200.00) Tj ET
+0.92 0.94 0.92 RG 58 525 m 537 525 l S
+0.94 0.96 0.94 rg 58 476 479 38 re f
+0.140 0.420 0.330 rg
+BT /F2 13 Tf 72 489 Td (Total: USD 1,249.50) Tj ET
+0.84 0.88 0.85 RG 58 76 m 537 76 l S
+0.40 0.45 0.42 rg
+BT /F1 9 Tf 58 58 Td (Payment due within 30 days. Thank you for your business.) Tj ET
+BT /F1 9 Tf 430 58 Td (INV-2026-001) Tj ET
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000027 00000 n 
+0000000076 00000 n 
+0000000133 00000 n 
+0000000269 00000 n 
+0000000339 00000 n 
+0000000414 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+1890
+%%EOF

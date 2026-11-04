@@ -15,8 +15,8 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Document
-        fields = ["id", "original_filename", "content_type", "size", "status", "processing_attempts", "last_error", "created_at", "updated_at", "download_url", "file"]
-        read_only_fields = ["id", "original_filename", "content_type", "size", "status", "processing_attempts", "last_error", "created_at", "updated_at", "download_url"]
+        fields = ["id", "original_filename", "content_type", "size", "status", "processing_attempts", "last_error", "extracted_data", "created_at", "updated_at", "download_url", "file"]
+        read_only_fields = ["id", "original_filename", "content_type", "size", "status", "processing_attempts", "last_error", "extracted_data", "created_at", "updated_at", "download_url"]
 
     def validate_file(self, value):
         allowed_extensions = {".pdf", ".csv", ".xlsx"}
