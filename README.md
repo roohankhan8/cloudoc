@@ -1,6 +1,6 @@
 # CloudDoc
 
-CloudDoc is a Django learning project for uploading invoices, extracting a few fields, and processing them asynchronously with PostgreSQL and AWS services. Milestones 1-4 cover local Floci setup, the Django document interface/API, SQS, and invoice extraction with a local worker or Lambda.
+CloudDoc is a Django learning project for uploading invoices, extracting a few fields, and processing them asynchronously with PostgreSQL and AWS services. Milestones 1-7 cover local Floci setup, the Django document interface/API, SQS, Lambda extraction, access control, monitoring, and repeatable infrastructure/CI.
 
 See [the project plan](docs/PROJECT_PLAN.md) and [the original roadmap](CloudDoc_AWS_Floci_Project_Roadmap.md).
 
@@ -75,6 +75,45 @@ python manage.py process_documents
 ```
 
 The frontend is available at `http://127.0.0.1:8000/`; the API remains available at `http://127.0.0.1:8000/api/documents/`.
+
+## Docker image
+
+Build the API and worker image:
+
+```powershell
+docker build -t clouddoc:local .
+```
+
+Run migrations, then start the API. From a container, use `host.docker.internal` to reach PostgreSQL and Floci on the Windows host:
+
+```powershell
+docker run --rm --env-file .env -e DB_HOST=host.docker.internal -e DB_PORT=5434 -e AWS_ENDPOINT_URL=http://host.docker.internal:4566 clouddoc:local python manage.py migrate --noinput
+docker run --rm --env-file .env -e DB_HOST=host.docker.internal -e DB_PORT=5434 -e AWS_ENDPOINT_URL=http://host.docker.internal:4566 -p 8000:8000 clouddoc:local
+```
+
+Run the worker in another container from the same image:
+
+```powershell
+docker run --rm --env-file .env -e DB_HOST=host.docker.internal -e DB_PORT=5434 -e AWS_ENDPOINT_URL=http://host.docker.internal:4566 --entrypoint python clouddoc:local manage.py process_documents
+```
+
+Set `AWS_ENDPOINT_URL` to an empty value and use an IAM role when running against AWS. Configure `ALLOWED_HOSTS`, a private `SECRET_KEY`, and HTTPS ingress for any network deployment.
+
+## Terraform and CI
+
+GitHub Actions runs Django checks and migrations against PostgreSQL, exercises the upload-to-S3/SQS path against Floci, validates Terraform, and builds the Docker image on pushes and pull requests.
+
+The Terraform files in `infrastructure/terraform` define an encrypted, private document bucket, processing and dead-letter queues, separate least-privilege API and processor policies, and a Lambda execution role. Configure AWS credentials through the CLI or an IAM role (not `.tfvars`), then initialize, review, and plan before applying:
+
+```powershell
+cd infrastructure/terraform
+terraform init
+terraform fmt -check -recursive
+terraform validate
+terraform plan -var="document_bucket_name=your-globally-unique-bucket-name"
+```
+
+After reviewing the plan, run `terraform apply` with the same variable. Terraform uses local state by default; `terraform.tfstate`, `.tfvars`, and plan files are ignored. Do not commit state or credentials. Attach the API policy to the API role and use the output `processor_role_arn` as the Lambda execution role. This milestone does not create networking, a database, or the application runtime in AWS.
 
 ## Health and processing logs
 

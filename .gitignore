@@ -9,3 +9,8 @@ media/
 .pytest_cache/
 .lambda-package/
 clouddoc-lambda.zip
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfplan

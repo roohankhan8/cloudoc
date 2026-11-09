@@ -8,11 +8,7 @@ $ErrorActionPreference = "Stop"
 $null = Get-Command docker -ErrorAction Stop
 $null = Get-Command aws -ErrorAction Stop
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$packagePath = [System.IO.Path]::GetFullPath((Join-Path $projectRoot ".lambda-package"))
 $packagePrefix = $projectRoot.TrimEnd('\') + '\'
-if (-not $packagePath.StartsWith($packagePrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
-    throw "Lambda package path must stay inside the project folder."
-}
 
 function Read-EnvFile($path, $values) {
     if (-not (Test-Path -LiteralPath $path)) { return }
@@ -74,18 +70,18 @@ foreach ($credential in @("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY")) {
 $lambdaEnv = @{ Variables = $lambdaVariables } | ConvertTo-Json -Compress
 
 $archivePath = Join-Path $projectRoot "clouddoc-lambda.zip"
-if (Test-Path -LiteralPath $packagePath) { Remove-Item -LiteralPath $packagePath -Recurse -Force }
-New-Item -ItemType Directory -Path $packagePath | Out-Null
-
-& docker run --rm --entrypoint /bin/sh -v "${projectRoot}:/var/task" public.ecr.aws/lambda/python:3.13 -c "python -m pip install --no-cache-dir -r /var/task/requirements-lambda.txt -t /var/task/.lambda-package"
+$archivePath = [System.IO.Path]::GetFullPath($archivePath)
+if (-not $archivePath.StartsWith($packagePrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "Lambda archive path must stay inside the project folder."
+}
+$packageCommand = 'python -m pip install --no-cache-dir -r /var/task/requirements-lambda.txt -t /tmp/lambda-package && python -c ''import os,zipfile; z=zipfile.ZipFile("/var/task/clouddoc-lambda.zip","w",zipfile.ZIP_DEFLATED); roots=[("/tmp/lambda-package","/tmp/lambda-package"),("/var/task/config","/var/task"),("/var/task/documents","/var/task")]; [z.write(os.path.join(root,f),os.path.relpath(os.path.join(root,f),prefix)) for base,prefix in roots for root,_,files in os.walk(base) for f in files if not f.endswith(".pyc") and "__pycache__" not in root]; z.close()'''
+& docker run --rm --entrypoint /bin/sh -v "${projectRoot}:/var/task" public.ecr.aws/lambda/python:3.13 -c $packageCommand
 if ($LASTEXITCODE -ne 0) { throw "Could not install Lambda dependencies in the runtime container." }
-Copy-Item -LiteralPath (Join-Path $projectRoot "config") -Destination $packagePath -Recurse
-Copy-Item -LiteralPath (Join-Path $projectRoot "documents") -Destination $packagePath -Recurse
-if (Test-Path -LiteralPath $archivePath) { Remove-Item -LiteralPath $archivePath -Force }
-Compress-Archive -Path (Join-Path $packagePath "*") -DestinationPath $archivePath
 Write-Output "Created $archivePath"
 
-$awsPrefix = @("--endpoint-url", $awsEndpoint, "lambda")
+$awsRegion = $config["AWS_REGION"]
+if (-not $awsRegion) { $awsRegion = "us-east-1" }
+$awsPrefix = @("--endpoint-url", $awsEndpoint, "--region", $awsRegion, "lambda")
 $functionResult = & aws @awsPrefix get-function --function-name $FunctionName --query "Configuration.FunctionName" --output text 2>&1
 $functionExists = $LASTEXITCODE -eq 0
 $functionError = $functionResult | Out-String
@@ -102,7 +98,7 @@ if ($functionExists) {
     Write-Output "Created Lambda function $FunctionName"
 }
 
-$sqsPrefix = @("--endpoint-url", $awsEndpoint, "sqs")
+$sqsPrefix = @("--endpoint-url", $awsEndpoint, "--region", $awsRegion, "sqs")
 $queueName = $config["SQS_QUEUE_NAME"]
 if (-not $queueName) { $queueName = "clouddoc-processing" }
 $queueUrl = Invoke-AwsCli ($sqsPrefix + @("get-queue-url", "--queue-name", $queueName, "--query", "QueueUrl", "--output", "text"))

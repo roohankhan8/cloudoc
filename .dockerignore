@@ -1,0 +1,10 @@
+.git
+.venv
+.venv-wsl
+.env
+.aws
+.lambda-package
+__pycache__
+*.py[cod]
+clouddoc-lambda.zip
+db.sqlite3

@@ -31,12 +31,14 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         file_obj = validated_data.pop("file")
+        owner = validated_data.pop("owner")
         original_filename = Path(file_obj.name).name[:255]
         object_key = f"documents/{uuid.uuid4()}{Path(original_filename).suffix.lower()}"
         document = None
         upload_document(file_obj, object_key)
         try:
             document = Document.objects.create(
+                owner=owner,
                 original_filename=original_filename,
                 object_key=object_key,
                 content_type=file_obj.content_type or "application/octet-stream",
