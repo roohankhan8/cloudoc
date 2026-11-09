@@ -13,7 +13,7 @@ Build a Django REST API that accepts PDF, CSV, and Excel documents, stores them 
 
 ## Milestones
 
-**Progress:** Milestones 1–5 completed. Milestone 5 adds authenticated document ownership; older documents remain unassigned until an administrator assigns them.
+**Progress:** Milestones 1–6 completed. Milestone 5 adds authenticated document ownership; older documents remain unassigned until an administrator assigns them. Milestone 6 adds structured processing logs, health checks, and queue-depth reporting.
 
 ### 1. Local cloud foundation
 
@@ -110,7 +110,7 @@ docs/                     Architecture, learning notes, deployment notes
 - [x] SQS-driven processing is asynchronous and idempotent.
 - [x] Lambda flow and its emulator limitations are documented.
 - [x] Access control and least-privilege permissions are in place.
-- [ ] Logs and basic processing metrics help diagnose failures.
+- [x] Logs and basic processing metrics help diagnose failures.
 - [ ] CI and Terraform provide repeatable checks and infrastructure.
 - [ ] A small AWS deployment has been validated, monitored, and safely torn down or cost-controlled.
 - [ ] Architecture, setup, and AWS-versus-Floci differences are documented.

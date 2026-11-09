@@ -13,7 +13,7 @@
 Use separate roles for the API and processor. Replace account, region, bucket, and queue placeholders; scope object access to the application's bucket and queue. The API needs:
 
 - `s3:PutObject`, `s3:GetObject`, `s3:DeleteObject` on `arn:aws:s3:::<bucket>/documents/*`.
-- `sqs:GetQueueUrl`, `sqs:SendMessage` on the processing queue ARN.
+- `sqs:GetQueueUrl`, `sqs:GetQueueAttributes`, `sqs:SendMessage` on the processing queue ARN.
 
 The local worker needs:
 

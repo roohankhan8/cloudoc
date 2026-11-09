@@ -1,4 +1,5 @@
 from pathlib import Path
+import logging
 import uuid
 
 from django.conf import settings
@@ -7,6 +8,8 @@ from rest_framework import serializers
 from .models import Document
 from .queue import enqueue_document
 from .storage import create_download_url, delete_document, upload_document
+
+logger = logging.getLogger(__name__)
 
 
 class DocumentSerializer(serializers.ModelSerializer):
@@ -40,6 +43,7 @@ class DocumentSerializer(serializers.ModelSerializer):
                 size=file_obj.size,
             )
             enqueue_document(document.id)
+            logger.info("Document uploaded", extra={"event": "document_uploaded", "document_id": str(document.id), "owner_id": document.owner_id, "outcome": "uploaded"})
             return document
         except Exception:
             if document is not None:

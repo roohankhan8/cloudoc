@@ -88,8 +88,9 @@ Write-Output "Created $archivePath"
 $awsPrefix = @("--endpoint-url", $awsEndpoint, "lambda")
 $functionResult = & aws @awsPrefix get-function --function-name $FunctionName --query "Configuration.FunctionName" --output text 2>&1
 $functionExists = $LASTEXITCODE -eq 0
-if (-not $functionExists -and ($functionResult -notmatch "ResourceNotFoundException|ResourceNotFound")) {
-    throw "Could not check Lambda function '$FunctionName': $functionResult"
+$functionError = $functionResult | Out-String
+if (-not $functionExists -and $functionError -notmatch "ResourceNotFoundException|ResourceNotFound") {
+    throw "Could not check Lambda function '$FunctionName': $functionError"
 }
 if ($functionExists) {
     Invoke-AwsCli ($awsPrefix + @("update-function-code", "--function-name", $FunctionName, "--zip-file", "fileb://$archivePath")) | Out-Null

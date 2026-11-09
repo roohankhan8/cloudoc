@@ -1,4 +1,5 @@
 import logging
+import time
 from pathlib import Path
 
 from django.conf import settings
@@ -11,9 +12,12 @@ from .storage import read_document
 logger = logging.getLogger(__name__)
 
 
-def process_document(document_id, attempts=1):
+def process_document(document_id, attempts=1, message_id=None):
+    started = time.perf_counter()
+    log_context = {"event": "document_processing", "document_id": str(document_id), "message_id": message_id, "attempts": attempts}
     document = Document.objects.filter(pk=document_id).first()
     if document is None or document.status in (Document.Status.PROCESSED, Document.Status.FAILED):
+        logger.info("Document processing skipped", extra={**log_context, "outcome": "skipped", "duration_ms": round((time.perf_counter() - started) * 1000, 2)})
         return True
 
     Document.objects.filter(pk=document.pk).update(
@@ -33,7 +37,8 @@ def process_document(document_id, attempts=1):
             last_error=str(exc)[:4000],
             updated_at=timezone.now(),
         )
-        logger.exception("Document %s processing attempt %s failed.", document_id, attempts)
+        outcome = "failed" if is_final_attempt else "retrying"
+        logger.exception("Document processing attempt failed", extra={**log_context, "outcome": outcome, "duration_ms": round((time.perf_counter() - started) * 1000, 2)})
         return False
 
     Document.objects.filter(pk=document.pk).update(
@@ -43,5 +48,5 @@ def process_document(document_id, attempts=1):
         extracted_data=extracted_data,
         updated_at=timezone.now(),
     )
-    logger.info("Processed document %s: %s", document_id, extracted_data)
+    logger.info("Document processing completed", extra={**log_context, "outcome": "processed", "duration_ms": round((time.perf_counter() - started) * 1000, 2)})
     return True

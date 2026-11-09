@@ -76,6 +76,20 @@ python manage.py process_documents
 
 The frontend is available at `http://127.0.0.1:8000/`; the API remains available at `http://127.0.0.1:8000/api/documents/`.
 
+## Health and processing logs
+
+`GET http://127.0.0.1:8000/health/` checks PostgreSQL and the processing queue. It returns HTTP 200 when both respond, otherwise 503; the JSON includes approximate visible queue depth and in-flight message count. Poll it from an internal uptime checker to record queue and service health. Keep this endpoint behind trusted ingress because it is unauthenticated and exposes operational counts. The API role needs `sqs:GetQueueUrl` and `sqs:GetQueueAttributes` for this check.
+
+Django writes JSON logs to the console. Upload and queue events share a document ID; worker events include the SQS message ID, receive attempt, outcome, and processing duration. Invoice field values are not written to logs. In CloudWatch Logs Insights, use:
+
+```text
+fields @timestamp, event, document_id, message_id, attempts, outcome, duration_ms, queue_depth
+| filter event in ["document_processing", "document_queued", "health_check"]
+| sort @timestamp desc
+```
+
+Create CloudWatch metric filters or alarms for repeated `outcome = "failed"` processing events and sustained queue depth if needed; this project does not provision a dashboard or alarm.
+
 ## Invoice extraction
 
 The worker extracts `invoice_number`, `invoice_date`, and `total_amount` from text-based PDFs and saves them in PostgreSQL. Results appear in the frontend and document API response. Use labels such as `Invoice Number: INV-1001`, `Invoice Date: 2026-01-15`, and `Total: USD 125.00`. Image-only scans need OCR, which this milestone does not include. CSV and XLSX uploads are still accepted, but extraction currently supports PDFs only.

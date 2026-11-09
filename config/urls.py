@@ -2,8 +2,10 @@ from django.contrib import admin
 from django.urls import include, path
 
 from documents import web_views
+from documents.health import health
 
 urlpatterns = [
+    path("health/", health, name="health"),
     path("accounts/", include("django.contrib.auth.urls")),
     path("", web_views.document_list, name="document-list"),
     path("documents/upload/", web_views.upload_document, name="document-upload"),

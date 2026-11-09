@@ -44,7 +44,7 @@ class Command(BaseCommand):
 
         attempts = int(message.get("Attributes", {}).get("ApproximateReceiveCount", "1"))
         try:
-            return process_document(document_id, attempts)
+            return process_document(document_id, attempts, message.get("MessageId"))
         except Exception:
-            logger.exception("Document %s processing failed before it could be recorded.", document_id)
+            logger.exception("Document processing failed before it could be recorded", extra={"event": "document_processing", "document_id": document_id, "message_id": message.get("MessageId"), "attempts": attempts, "outcome": "worker_error"})
             return False
