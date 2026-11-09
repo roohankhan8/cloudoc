@@ -1,5 +1,6 @@
 import uuid
 
+from django.conf import settings
 from django.db import models
 
 
@@ -11,6 +12,7 @@ class Document(models.Model):
         FAILED = "failed", "Failed"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="documents")
     original_filename = models.CharField(max_length=255)
     object_key = models.CharField(max_length=512, unique=True)
     content_type = models.CharField(max_length=100)

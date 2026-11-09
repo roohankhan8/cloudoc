@@ -183,6 +183,28 @@
         background: #fff0ed;
         color: #9b382a;
       }
+      .progress {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        margin-top: 7px;
+        color: #52625a;
+        font-size: 12px;
+      }
+      .progress::before {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: currentColor;
+        content: "";
+      }
+      .progress.active::before {
+        background: #267657;
+        animation: pulse 1s ease-in-out infinite alternate;
+      }
+      @keyframes pulse {
+        to { opacity: 0.3; }
+      }
       .actions {
         display: flex;
         align-items: center;
@@ -245,7 +267,7 @@
           <p class="eyebrow">Document workspace</p>
           <h1>CloudDoc</h1>
         </div>
-        <span class="local">Local development</span>
+        <div class="local">{{ request.user.username }} <form method="post" action="{% url 'logout' %}" style="display:inline">{% csrf_token %}<button type="submit">Sign out</button></form></div>
       </header>
 
       {% if messages %}
@@ -301,9 +323,12 @@
             </thead>
             <tbody>
               {% for document in documents %}
-              <tr>
+              <tr id="document-{{ document.id }}">
                 <td>
                   <div class="filename">{{ document.original_filename }}</div>
+                  <div class="progress{% if document.status == 'pending' or document.status == 'processing' %} active{% endif %}" data-progress aria-live="polite">
+                    {% if document.status == 'pending' %}Queued for processing{% elif document.status == 'processing' %}Extracting invoice fields…{% elif document.status == 'processed' %}Processing complete{% else %}Processing failed{% endif %}
+                  </div>
                   {% if document.last_error %}
                   <div class="error-detail">{{ document.last_error }}</div>
                   {% endif %} {% if document.extracted_data %}
@@ -318,7 +343,7 @@
                 </td>
                 <td>{{ document.size|filesizeformat }}</td>
                 <td>
-                  <span class="status {{ document.status }}"
+                  <span class="status {{ document.status }}" data-status
                     >{{ document.get_status_display }}</span
                   >
                 </td>
@@ -351,5 +376,60 @@
         {% endif %}
       </section>
     </main>
+    <script>
+      const activeStatuses = new Set(["pending", "processing"]);
+      const statusMessages = {
+        pending: "Queued for processing",
+        processing: "Extracting invoice fields…",
+        processed: "Processing complete",
+        failed: "Processing failed",
+      };
+
+      async function refreshDocuments() {
+        try {
+          const response = await fetch("/api/documents/", {
+            headers: { Accept: "application/json" },
+            cache: "no-store",
+          });
+          if (!response.ok) {
+            window.setTimeout(refreshDocuments, 5000);
+            return;
+          }
+          const documents = await response.json();
+          let stillProcessing = false;
+
+          for (const item of documents) {
+            const row = document.getElementById(`document-${item.id}`);
+            if (!row) continue;
+            const status = row.querySelector("[data-status]");
+            const progress = row.querySelector("[data-progress]");
+            status.textContent = item.status[0].toUpperCase() + item.status.slice(1);
+            status.className = `status ${item.status}`;
+            progress.textContent = statusMessages[item.status] || item.status;
+            progress.classList.toggle("active", activeStatuses.has(item.status));
+            const error = row.querySelector(".error-detail");
+            if (item.last_error) {
+              const detail = error || Object.assign(document.createElement("div"), { className: "error-detail" });
+              detail.textContent = item.last_error;
+              if (!error) row.querySelector(".filename").after(detail);
+            } else if (error) error.remove();
+            const result = row.querySelector(".extracted");
+            if (item.extracted_data && Object.keys(item.extracted_data).length) {
+              const fields = item.extracted_data;
+              const summary = `Invoice ${fields.invoice_number || "not found"} · ${fields.invoice_date || "date not found"} · ${fields.total_amount || "total not found"}`;
+              const output = result || Object.assign(document.createElement("div"), { className: "extracted" });
+              output.textContent = summary;
+              if (!result) row.querySelector(".filename").after(output);
+            }
+            stillProcessing ||= activeStatuses.has(item.status);
+          }
+          if (stillProcessing) window.setTimeout(refreshDocuments, 2000);
+        } catch (_) {
+          window.setTimeout(refreshDocuments, 5000);
+        }
+      }
+
+      if (document.querySelector(".progress.active")) refreshDocuments();
+    </script>
   </body>
 </html>

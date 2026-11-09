@@ -54,6 +54,14 @@ python manage.py migrate
 python manage.py setup_sqs
 ```
 
+Create a login for the document workspace and API:
+
+```powershell
+python manage.py createsuperuser
+```
+
+Sign in at `http://127.0.0.1:8000/accounts/login/`. Each account can access only its own documents. Existing documents created before ownership was added remain in storage and require an administrator to assign an owner before they appear to a user.
+
 Start the API in one PowerShell window:
 
 ```powershell
@@ -80,49 +88,13 @@ Sample invoices for testing are in [`output/pdf/`](output/pdf/):
 
 ## Run the same processor through Lambda
 
-Stop the local `process_documents` worker first so it does not consume messages alongside Lambda. Package the function using the Lambda Python runtime image:
+Stop the local `process_documents` worker first so it does not consume messages alongside Lambda. Then run one script to package the function, create or update it, and connect the processing queue:
 
 ```powershell
 .\scripts\package_lambda.ps1
 ```
 
-Create a local function. The sample database values below match `.env.example`; adjust them if your local database uses different credentials. `host.docker.internal` lets the Lambda container reach PostgreSQL running on the Windows host. Floci supplies the Lambda container's reachable AWS endpoint.
-
-```powershell
-$lambdaEnvironment = @{
-  Variables = @{
-    DEBUG = "False"
-    DB_NAME = "clouddoc"
-    DB_USER = "clouddoc"
-    DB_PASSWORD = "clouddoc"
-    DB_HOST = "host.docker.internal"
-    DB_PORT = "5434"
-    AWS_ACCESS_KEY_ID = "test"
-    AWS_SECRET_ACCESS_KEY = "test"
-    AWS_REGION = "us-east-1"
-    AWS_S3_BUCKET_NAME = "my-floci-bucket"
-    SQS_MAX_RECEIVE_COUNT = "3"
-  }
-} | ConvertTo-Json -Compress
-
-aws --endpoint-url http://localhost:4566 lambda create-function `
-  --function-name clouddoc-invoice-processor `
-  --runtime python3.13 `
-  --role arn:aws:iam::000000000000:role/lambda-role `
-  --handler documents.lambda_handler.handler `
-  --zip-file fileb://clouddoc-lambda.zip `
-  --timeout 60 `
-  --memory-size 512 `
-  --environment $lambdaEnvironment
-```
-
-Connect the function to the existing SQS queue. Partial batch failure reporting lets SQS retry failed messages and eventually route them to the configured dead-letter queue.
-
-```powershell
-$queueUrl = aws --endpoint-url http://localhost:4566 sqs get-queue-url --queue-name clouddoc-processing --query QueueUrl --output text
-$queueArn = aws --endpoint-url http://localhost:4566 sqs get-queue-attributes --queue-url $queueUrl --attribute-names QueueArn --query Attributes.QueueArn --output text
-aws --endpoint-url http://localhost:4566 lambda create-event-source-mapping --function-name clouddoc-invoice-processor --event-source-arn $queueArn --batch-size 10 --function-response-types ReportBatchItemFailures
-```
+The script reads database, AWS, bucket, and queue settings from `.env` (falling back to `.env.example`). It changes loopback database and Floci endpoints to `host.docker.internal` so the Lambda container can reach services on the Windows host. The default local IAM role ARN is `arn:aws:iam::000000000000:role/lambda-role`; set `LAMBDA_ROLE_ARN` in `.env` or pass `-LambdaRoleArn` if your Floci setup uses a different role. Pass `-LambdaAwsEndpoint` if Lambda needs a custom Floci endpoint.
 
 Upload a PDF from the frontend and watch its status/results update. To return to local-worker mode, remove the Lambda event source mapping before restarting `python manage.py process_documents`. Use `aws lambda list-event-source-mappings` to find its UUID, then `aws lambda delete-event-source-mapping --uuid <uuid>` to remove it.
 
@@ -133,25 +105,27 @@ This demonstrates local event-mapping behavior described in the [Floci Lambda gu
 Upload a PDF, CSV, or XLSX file (maximum 10 MiB by default):
 
 ```powershell
-curl.exe -F "file=@invoice.pdf" http://127.0.0.1:8000/api/documents/
+curl.exe -u username -F "file=@invoice.pdf" http://127.0.0.1:8000/api/documents/
 ```
+
+The API requires a Django account; `curl.exe -u username` prompts for its password.
 
 The response includes its UUID, metadata, initial `pending` status, and a short-lived `download_url`. The worker changes status to `processed` after extracting invoice fields from a supported PDF. List documents or retrieve one by its UUID to see status, extracted fields, and retry details:
 
 ```powershell
-curl.exe http://127.0.0.1:8000/api/documents/
-curl.exe http://127.0.0.1:8000/api/documents/<document-uuid>/
+curl.exe -u username http://127.0.0.1:8000/api/documents/
+curl.exe -u username http://127.0.0.1:8000/api/documents/<document-uuid>/
 ```
 
 Open the returned `download_url` to fetch the stored object. Delete a document and its S3 object with:
 
 ```powershell
-curl.exe -X DELETE http://127.0.0.1:8000/api/documents/<document-uuid>/
+curl.exe -u username -X DELETE http://127.0.0.1:8000/api/documents/<document-uuid>/
 ```
 
 ## Configuration
 
-Edit `.env` for local settings. It is ignored by Git. The included AWS credentials are dummy values accepted by local emulators; never replace them with real credentials. Leave `AWS_ENDPOINT_URL=http://localhost:4566` for Floci. For a later AWS environment, use an empty endpoint and real credentials from an IAM role or secure environment configuration. Existing `.env` files using `AWS_S3_ENDPOINT_URL` continue to work.
+Edit `.env` for local settings. It is ignored by Git. Generate a private `SECRET_KEY` with `python -c "import secrets; print(secrets.token_urlsafe(50))"` before exposing Django beyond localhost. The AWS credentials in `.env.example` are dummy values accepted by local emulators; never replace them with real credentials. Leave `AWS_ENDPOINT_URL=http://localhost:4566` for Floci. For AWS, leave access key variables unset and use an IAM role or secure environment configuration. Existing `.env` files using `AWS_S3_ENDPOINT_URL` continue to work.
 
 `MAX_UPLOAD_SIZE` is in bytes (10 MiB by default). `AWS_S3_PRESIGNED_URL_TTL` is the download URL lifetime in seconds. `SQS_MAX_RECEIVE_COUNT` controls attempts before SQS moves a failing message to its dead-letter queue.
 
@@ -175,7 +149,7 @@ PostgreSQL data remains in the `postgres_data` Docker volume. To delete that dat
 
 ## Scope and limitations
 
-- The API implements document upload, metadata, presigned downloads, deletion, queued processing status, and basic invoice extraction. It does not add authentication or ownership checks.
+- The API and browser require authentication; document queries and download/delete routes are scoped to the signed-in owner.
 - The extraction example uses text labels and regular expressions; it is not a general OCR or document-understanding system. Failed messages are retained in `clouddoc-processing-dlq` for inspection.
-- The API has no authentication yet. Keep the development server bound to localhost and do not expose it to a network.
+- Local HTTP Basic authentication is intended for development; use HTTPS and a production authentication setup before exposing the API.
 - Floci behavior may differ from AWS. Validate AWS-specific behavior in the later deployment milestone.
